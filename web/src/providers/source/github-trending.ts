@@ -28,35 +28,39 @@ export function createGitHubTrendingProvider(config?: {
       const $ = cheerio.load(html)
       const items: TrendingItem[] = []
 
-      $("article.Box-row").each((index, element) => {
-        const $el = $(element)
+      try {
+        $("article.Box-row").each((index, element) => {
+          const $el = $(element)
 
-        const fullName = $el.find("h2 a").text().trim().replace(/\s+/g, "")
-        const [owner, repo] = fullName.split("/")
-        const urlPath = $el.find("h2 a").attr("href") ?? ""
-        const description = $el.find("p").text().trim() || null
-        const language = $el.find("[itemprop='programmingLanguage']").text().trim() || null
+          const fullName = $el.find("h2 a").text().trim().replace(/\s+/g, "")
+          const [owner, repo] = fullName.split("/")
+          const urlPath = $el.find("h2 a").attr("href") ?? ""
+          const description = $el.find("p").text().trim() || null
+          const language = $el.find("[itemprop='programmingLanguage']").text().trim() || null
 
-        const starsStr = $el.find(".octicon-star").parent().text().trim()
-        const forksStr = $el.find(".octicon-repo-forked").parent().text().trim()
+          const starsStr = $el.find("a[href$='/stargazers']").text().trim()
+          const forksStr = $el.find("a[href$='/forks']").text().trim()
 
-        const stars = starsStr ? parseInt(starsStr.replace(/,/g, ""), 10) || null : null
-        const forks = forksStr ? parseInt(forksStr.replace(/,/g, ""), 10) || null : null
+          const stars = starsStr ? parseInt(starsStr.replace(/,/g, ""), 10) || null : null
+          const forks = forksStr ? parseInt(forksStr.replace(/,/g, ""), 10) || null : null
 
-        if (owner && repo) {
-          items.push({
-            name: fullName,
-            owner,
-            repo,
-            url: `https://github.com${urlPath}`,
-            description,
-            language,
-            stars,
-            forks,
-            rank: index + 1,
-          })
-        }
-      })
+          if (owner && repo) {
+            items.push({
+              name: fullName,
+              owner,
+              repo,
+              url: `https://github.com${urlPath}`,
+              description,
+              language,
+              stars,
+              forks,
+              rank: index + 1,
+            })
+          }
+        })
+      } catch (error) {
+        console.error("Failed to parse trending HTML:", error)
+      }
 
       return items
     },
