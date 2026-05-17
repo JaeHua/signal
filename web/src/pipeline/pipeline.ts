@@ -86,6 +86,15 @@ async function runSourcePipeline(sourceKey: string): Promise<void> {
 
         const summary = await aiProvider.generateSummary(aiItem)
 
+        let embedding: number[] | null = null
+        try {
+          const embedText = `${item.title}. ${item.description ?? ""}`.trim()
+          const { generateEmbedding } = await import("@/lib/embedding")
+          embedding = await generateEmbedding(embedText)
+        } catch (error) {
+          console.error(`[Pipeline] Embedding failed for ${item.title}:`, error)
+        }
+
         await prisma.signalSummary.create({
           data: {
             signalId: signal.id,
@@ -96,6 +105,7 @@ async function runSourcePipeline(sourceKey: string): Promise<void> {
             worthDeepDive: summary.worthDeepDive,
             deepDiveReason: summary.deepDiveReason,
             provider: aiProvider.name,
+            embedding: embedding ? JSON.stringify(embedding) : null,
           },
         })
 

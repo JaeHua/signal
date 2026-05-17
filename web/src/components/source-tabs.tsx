@@ -21,7 +21,7 @@ export function SourceTabs({ tabs, active, onChange }: SourceTabsProps) {
           key={tab.key}
           onClick={() => onChange(tab.key)}
           className={cn(
-            "px-3 py-1.5 text-xs font-medium rounded-md transition-colors",
+            "px-2.5 sm:px-3 py-1.5 text-[11px] sm:text-xs font-medium rounded-md transition-colors min-h-[36px] sm:min-h-0",
             active === tab.key
               ? "bg-card text-foreground shadow-sm"
               : "text-muted hover:text-foreground"
