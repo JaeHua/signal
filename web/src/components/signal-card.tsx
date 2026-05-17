@@ -45,7 +45,7 @@ export function SignalCard({
     <Link
       href={`/signals/${id}`}
       className={cn(
-        "group flex flex-col gap-3 p-5 rounded-2xl",
+        "group flex flex-col gap-2.5 sm:gap-3 p-4 sm:p-5 rounded-xl sm:rounded-2xl",
         "bg-card border border-border",
         "hover:border-foreground/10 transition-colors duration-200",
       )}

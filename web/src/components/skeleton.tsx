@@ -1,6 +1,6 @@
 export function SignalCardSkeleton() {
   return (
-    <div className="flex flex-col gap-3 p-5 rounded-2xl bg-card border border-border animate-pulse">
+    <div className="flex flex-col gap-2.5 sm:gap-3 p-4 sm:p-5 rounded-xl sm:rounded-2xl bg-card border border-border animate-pulse">
       <div className="flex items-center justify-between">
         <div className="h-4 w-40 bg-muted-bg rounded" />
         <div className="h-4 w-12 bg-muted-bg rounded" />

@@ -22,12 +22,12 @@ export default function HistoryPage() {
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
-      <main className="flex-1 max-w-7xl mx-auto w-full px-6 py-8">
-        <h1 className="text-lg font-semibold text-foreground tracking-tight mb-8">日志与归档</h1>
+      <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 py-6 sm:py-8">
+        <h1 className="text-base sm:text-lg font-semibold text-foreground tracking-tight mb-6 sm:mb-8">日志与归档</h1>
 
-        <section className="mb-10">
-          <h2 className="text-sm font-semibold text-foreground mb-4">运行日志</h2>
-          <div className="space-y-1 max-h-64 overflow-y-auto rounded-xl border border-border p-2">
+        <section className="mb-8 sm:mb-10">
+          <h2 className="text-sm font-semibold text-foreground mb-3 sm:mb-4">运行日志</h2>
+          <div className="space-y-1 max-h-56 sm:max-h-64 overflow-y-auto rounded-xl border border-border p-2">
             {runs?.items?.length > 0 ? (
               runs.items.map((run: { id: string; source: string; status: string; scraped: number; processed: number; skipped: number; errors: number; startedAt: string }) => (
                 <div key={run.id} className="flex items-center gap-3 text-sm py-1.5 px-1 border-b border-border last:border-0">

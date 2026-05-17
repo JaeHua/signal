@@ -46,6 +46,7 @@ model SignalSummary {
   worthDeepDive  Boolean
   deepDiveReason String?
   provider       String
+  embedding      String?
   createdAt      DateTime @default(now())
 
   @@index([signalId, summaryDate])

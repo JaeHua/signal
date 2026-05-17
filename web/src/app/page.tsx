@@ -42,11 +42,10 @@ export default function Dashboard() {
           })
         )}
       />
-      <main className="flex-1 max-w-7xl mx-auto w-full px-6 py-8">
-        <div className="flex items-center justify-between mb-6">
+      <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 py-6 sm:py-8">
+        <div className="flex items-center justify-between mb-4 sm:mb-6">
           <div>
-            <h1 className="text-lg font-semibold text-foreground tracking-tight">今日信息流</h1>
-
+            <h1 className="text-base sm:text-lg font-semibold text-foreground tracking-tight">今日信息流</h1>
           </div>
           <div className="flex items-center gap-3">
             <select
@@ -96,7 +95,7 @@ export default function Dashboard() {
           <SignalGrid items={items} />
         )}
       </main>
-      <footer className="border-t border-border py-6 text-center text-xs text-muted">
+      <footer className="hidden sm:block border-t border-border py-6 text-center text-xs text-muted">
         Signal &copy; 2026
       </footer>
     </div>
