@@ -19,6 +19,7 @@ export default function SettingsPage() {
   const [sources, setSources] = useState<Array<{ key: string; enabled: boolean; maxItems: number }>>([])
   const [status, setStatus] = useState<{ type: "success" | "error"; message: string } | null>(null)
   const [retentionDays, setRetentionDays] = useState(7)
+  const [scheduleInterval, setScheduleInterval] = useState(60)
 
   useEffect(() => {
     if (aiData?.items?.[0]) {
@@ -34,9 +35,9 @@ export default function SettingsPage() {
 
   useEffect(() => {
     fetch("/api/settings/retention")
-      .then(r => r.ok ? r.json() : { retentionDays: 7 })
-      .then(d => setRetentionDays(d.retentionDays ?? 7))
-      .catch(() => setRetentionDays(7))
+      .then(r => r.ok ? r.json() : { retentionDays: 7, scheduleInterval: 60 })
+      .then(d => { setRetentionDays(d.retentionDays ?? 7); setScheduleInterval(d.scheduleInterval ?? 60) })
+      .catch(() => { setRetentionDays(7); setScheduleInterval(60) })
   }, [])
 
   useEffect(() => {
@@ -196,6 +197,29 @@ export default function SettingsPage() {
               <option value={365}>365 天</option>
             </select>
             <p className="text-[11px] text-muted mt-1.5">超过天数的 AI 摘要和运行日志将被自动清理</p>
+          </div>
+          <div className="mt-4">
+            <label className="text-xs text-muted block mb-1">抓取间隔</label>
+            <select value={scheduleInterval}
+              onChange={async (e) => {
+                const v = Number(e.target.value)
+                setScheduleInterval(v)
+                await fetch("/api/settings/retention", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ scheduleInterval: v }),
+                })
+                setStatus({ type: "success", message: `抓取间隔已更新为 ${v >= 60 ? v / 60 + ' 小时' : v + ' 分钟'}` })
+              }}
+              className="text-sm bg-transparent border border-border rounded-lg px-3 py-2 text-foreground">
+              <option value={30}>30 分钟</option>
+              <option value={60}>1 小时</option>
+              <option value={180}>3 小时</option>
+              <option value={360}>6 小时</option>
+              <option value={720}>12 小时</option>
+              <option value={1440}>24 小时</option>
+            </select>
+            <p className="text-[11px] text-muted mt-1.5">自动抓取信息源并生成 AI 摘要的频率</p>
           </div>
         </section>
       </main>
