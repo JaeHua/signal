@@ -14,6 +14,8 @@ export async function GET(request: NextRequest) {
     where.source = source
   }
 
+  const effectiveLimit = source === "all" ? limit * 3 : limit
+
   const signals = await prisma.signal.findMany({
     where,
     include: {
@@ -24,7 +26,7 @@ export async function GET(request: NextRequest) {
       },
     },
     orderBy: { trendingRank: "asc" },
-    take: limit,
+    take: effectiveLimit,
   })
 
   const items = signals.map((s) => {
