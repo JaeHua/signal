@@ -1,0 +1,62 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id          String      @id @default(cuid())
+  githubId    Int         @unique
+  githubLogin String
+  name        String?
+  email       String?
+  avatarUrl   String?
+  createdAt   DateTime    @default(now())
+  savedRepos  SavedRepo[]
+}
+
+model Repo {
+  id           String        @id @default(cuid())
+  name         String        @unique
+  owner        String
+  repo         String
+  url          String
+  description  String?
+  language     String?
+  stars        Int?
+  forks        Int?
+  trendingDate DateTime?
+  trendingRank Int?
+  createdAt    DateTime      @default(now())
+  summaries    RepoSummary[]
+  savedBy      SavedRepo[]
+}
+
+model RepoSummary {
+  id             String   @id @default(cuid())
+  repoId         String
+  repo           Repo     @relation(fields: [repoId], references: [id])
+  summaryDate    DateTime @default(now())
+  aiSummary      String
+  techTags       String
+  whyMatters     String
+  worthDeepDive  Boolean
+  deepDiveReason String?
+  provider       String
+  createdAt      DateTime @default(now())
+
+  @@index([repoId, summaryDate])
+}
+
+model SavedRepo {
+  id        String   @id @default(cuid())
+  userId    String
+  repoId    String
+  user      User     @relation(fields: [userId], references: [id])
+  repo      Repo     @relation(fields: [repoId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@unique([userId, repoId])
+}
