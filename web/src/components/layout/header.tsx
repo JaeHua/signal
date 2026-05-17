@@ -7,6 +7,7 @@ import { SearchBar } from "./search-bar"
 import { UserMenu } from "./user-menu"
 
 const navLinks = [
+  { href: "/metrics", label: "指标" },
   { href: "/history", label: "日志" },
   { href: "/settings", label: "设置" },
 ]

@@ -14,6 +14,7 @@ export default function SettingsPage() {
 
   const [aiForm, setAIForm] = useState({
     provider: "deepseek", model: "deepseek-chat", apiKey: "", baseUrl: "",
+    inputPricePer1K: "", outputPricePer1K: "",
   })
   const [sources, setSources] = useState<Array<{ key: string; enabled: boolean; maxItems: number }>>([])
   const [status, setStatus] = useState<{ type: "success" | "error"; message: string } | null>(null)
@@ -21,7 +22,8 @@ export default function SettingsPage() {
   useEffect(() => {
     if (aiData?.items?.[0]) {
       const c = aiData.items[0]
-      setAIForm({ provider: c.provider, model: c.model, apiKey: c.apiKey, baseUrl: c.baseUrl ?? "" })
+      setAIForm({ provider: c.provider, model: c.model, apiKey: c.apiKey, baseUrl: c.baseUrl ?? "",
+        inputPricePer1K: c.inputPricePer1K?.toString() ?? "", outputPricePer1K: c.outputPricePer1K?.toString() ?? "" })
     }
   }, [aiData])
 
@@ -122,6 +124,20 @@ export default function SettingsPage() {
               <label className="text-xs text-muted block mb-1">Base URL</label>
               <input value={aiForm.baseUrl} onChange={(e) => setAIForm({ ...aiForm, baseUrl: e.target.value })}
                 className="w-full text-sm bg-transparent border border-border rounded-lg px-3 py-2 text-foreground" />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs text-muted block mb-1">输入价格 ($/1K tokens)</label>
+                <input value={aiForm.inputPricePer1K} onChange={(e) => setAIForm({ ...aiForm, inputPricePer1K: e.target.value })}
+                  placeholder="0.27" type="number" step="0.01" min="0"
+                  className="w-full text-sm bg-transparent border border-border rounded-lg px-3 py-2 text-foreground" />
+              </div>
+              <div>
+                <label className="text-xs text-muted block mb-1">输出价格 ($/1K tokens)</label>
+                <input value={aiForm.outputPricePer1K} onChange={(e) => setAIForm({ ...aiForm, outputPricePer1K: e.target.value })}
+                  placeholder="1.10" type="number" step="0.01" min="0"
+                  className="w-full text-sm bg-transparent border border-border rounded-lg px-3 py-2 text-foreground" />
+              </div>
             </div>
             <Button size="sm" onClick={saveAI}>保存 AI 配置</Button>
           </div>

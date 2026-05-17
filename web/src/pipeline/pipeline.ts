@@ -1,13 +1,46 @@
 import { prisma } from "@/lib/prisma"
 import { createSourceProvider } from "@/providers/source"
 import { createAIProvider, type AIProviderType } from "@/providers/ai"
-import { decrypt } from "@/lib/encryption"
 import { seedDefaults } from "@/lib/seed"
 
 let isRunning = false
 
 export function isPipelineRunning(): boolean {
   return isRunning
+}
+
+function estimateTokens(text: string): number {
+  return Math.ceil(text.length / 4)
+}
+
+async function upsertDailyMetrics(source: string, date: Date, stats: {
+  scraped: number; processed: number; skipped: number; errors: number
+  totalTokens: number; totalDurationMs: number; status: string
+}) {
+  const day = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+  const existing = await prisma.dailyMetrics.findUnique({
+    where: { date_source: { date: day, source } },
+  })
+
+  const isSuccess = stats.status === "success" || stats.status === "partial"
+  const data = {
+    date: day,
+    source,
+    totalRuns: (existing?.totalRuns ?? 0) + 1,
+    successRuns: (existing?.successRuns ?? 0) + (isSuccess ? 1 : 0),
+    totalScraped: (existing?.totalScraped ?? 0) + stats.scraped,
+    totalProcessed: (existing?.totalProcessed ?? 0) + stats.processed,
+    totalErrors: (existing?.totalErrors ?? 0) + stats.errors,
+    totalTokens: (existing?.totalTokens ?? 0) + stats.totalTokens,
+    totalDurationMs: (existing?.totalDurationMs ?? 0) + stats.totalDurationMs,
+    estimatedCost: ((existing?.totalTokens ?? 0) + stats.totalTokens) / 1_000_000 * 0.5,
+  }
+
+  await prisma.dailyMetrics.upsert({
+    where: { date_source: { date: day, source } },
+    create: data,
+    update: data,
+  })
 }
 
 async function runSourcePipeline(sourceKey: string): Promise<void> {
@@ -17,6 +50,8 @@ async function runSourcePipeline(sourceKey: string): Promise<void> {
     return
   }
 
+  const runStartTime = Date.now()
+
   const run = await prisma.pipelineRun.create({
     data: { source: sourceKey, status: "running", startedAt: new Date() },
   })
@@ -25,6 +60,8 @@ async function runSourcePipeline(sourceKey: string): Promise<void> {
   let processed = 0
   let skipped = 0
   let errors = 0
+  let totalTokens = 0
+  const processingTimes: number[] = []
   const errorMessages: string[] = []
 
   try {
@@ -43,26 +80,19 @@ async function runSourcePipeline(sourceKey: string): Promise<void> {
     today.setHours(0, 0, 0, 0)
 
     for (const item of items) {
+      const itemStart = Date.now()
       try {
         const signal = await prisma.signal.upsert({
           where: { source_sourceId: { source: item.source, sourceId: item.sourceId } },
           create: {
-            source: item.source,
-            sourceId: item.sourceId,
-            title: item.title,
-            url: item.url,
-            description: item.description,
-            metadata: JSON.stringify(item.metadata),
+            source: item.source, sourceId: item.sourceId, title: item.title, url: item.url,
+            description: item.description, metadata: JSON.stringify(item.metadata),
             publishedAt: item.publishedAt ? new Date(item.publishedAt) : null,
-            trendingDate: new Date(),
-            trendingRank: item.rank,
+            trendingDate: new Date(), trendingRank: item.rank,
           },
           update: {
-            title: item.title,
-            description: item.description,
-            metadata: JSON.stringify(item.metadata),
-            trendingDate: new Date(),
-            trendingRank: item.rank,
+            title: item.title, description: item.description,
+            metadata: JSON.stringify(item.metadata), trendingDate: new Date(), trendingRank: item.rank,
           },
         })
 
@@ -85,6 +115,10 @@ async function runSourcePipeline(sourceKey: string): Promise<void> {
         }
 
         const summary = await aiProvider.generateSummary(aiItem)
+        const itemTokens = estimateTokens(JSON.stringify(aiItem) + JSON.stringify(summary))
+        totalTokens += itemTokens
+
+        processingTimes.push(Date.now() - itemStart)
 
         let embedding: number[] | null = null
         try {
@@ -97,14 +131,10 @@ async function runSourcePipeline(sourceKey: string): Promise<void> {
 
         await prisma.signalSummary.create({
           data: {
-            signalId: signal.id,
-            summaryDate: new Date(),
-            aiSummary: summary.summary,
-            techTags: JSON.stringify(summary.techTags),
-            whyMatters: summary.whyMatters,
-            worthDeepDive: summary.worthDeepDive,
-            deepDiveReason: summary.deepDiveReason,
-            provider: aiProvider.name,
+            signalId: signal.id, summaryDate: new Date(),
+            aiSummary: summary.summary, techTags: JSON.stringify(summary.techTags),
+            whyMatters: summary.whyMatters, worthDeepDive: summary.worthDeepDive,
+            deepDiveReason: summary.deepDiveReason, provider: aiProvider.name,
             embedding: embedding ? JSON.stringify(embedding) : null,
           },
         })
@@ -120,35 +150,39 @@ async function runSourcePipeline(sourceKey: string): Promise<void> {
 
     const sevenDaysAgo = new Date()
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
-    await prisma.signalSummary.deleteMany({
-      where: { summaryDate: { lt: sevenDaysAgo } },
-    })
-    await prisma.pipelineRun.deleteMany({
-      where: { startedAt: { lt: sevenDaysAgo } },
-    })
+    await prisma.signalSummary.deleteMany({ where: { summaryDate: { lt: sevenDaysAgo } } })
+    await prisma.pipelineRun.deleteMany({ where: { startedAt: { lt: sevenDaysAgo } } })
+    await prisma.dailyMetrics.deleteMany({ where: { date: { lt: sevenDaysAgo } } })
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
     errorMessages.push(message)
   }
 
+  const totalDurationMs = Date.now() - runStartTime
+  const avgLatencyMs = processingTimes.length > 0
+    ? Math.round(processingTimes.reduce((a, b) => a + b, 0) / processingTimes.length)
+    : 0
+
+  const status = errors > 0 ? (scraped > 0 ? "partial" : "failed") : "success"
+
   await prisma.pipelineRun.update({
     where: { id: run.id },
     data: {
-      status: errors > 0 ? (scraped > 0 ? "partial" : "failed") : "success",
-      scraped,
-      processed,
-      skipped,
-      errors,
+      status, scraped, processed, skipped, errors,
+      totalDurationMs, totalTokens, avgLatencyMs,
       errorLog: errorMessages.length > 0 ? JSON.stringify(errorMessages) : null,
       finishedAt: new Date(),
     },
+  })
+
+  await upsertDailyMetrics(sourceKey, new Date(), {
+    scraped, processed, skipped, errors, totalTokens, totalDurationMs, status,
   })
 }
 
 export async function runPipeline(): Promise<void> {
   if (isRunning) return
   isRunning = true
-
   try {
     await seedDefaults()
     const configs = await prisma.sourceConfig.findMany({ where: { enabled: true } })
