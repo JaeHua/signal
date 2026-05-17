@@ -78,9 +78,10 @@ async function runSourcePipeline(sourceKey: string): Promise<void> {
         const aiItem = {
           name: item.title,
           owner: (item.metadata.author as string) ?? (item.metadata.language as string) ?? "",
-          repo: "",
+          repo: item.source === "github" ? item.sourceId : "",
           description: item.description,
           language: (item.metadata.language as string) ?? null,
+          source: item.source,
         }
 
         const summary = await aiProvider.generateSummary(aiItem)

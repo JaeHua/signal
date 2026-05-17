@@ -4,6 +4,7 @@ export interface TrendingItem {
   repo: string
   description: string | null
   language: string | null
+  source?: string
 }
 
 export interface AISummary {
