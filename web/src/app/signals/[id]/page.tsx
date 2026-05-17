@@ -8,6 +8,7 @@ import useSWR from "swr"
 import { Header } from "@/components/layout/header"
 import { Button } from "@/components/ui/button"
 import { SourceBadge } from "@/components/source-badge"
+import { ShareCard } from "@/components/share-card"
 import { useSession } from "next-auth/react"
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
@@ -75,6 +76,12 @@ export default function SignalDetail() {
             <a href={data.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-sm text-muted hover:text-foreground transition-colors">
               <ExternalLink className="h-4 w-4" />
             </a>
+            <ShareCard
+              source={data.source}
+              title={data.title}
+              metadata={data.metadata}
+              summary={data.summary}
+            />
           </div>
         </div>
 

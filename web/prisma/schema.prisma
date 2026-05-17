@@ -72,8 +72,27 @@ model PipelineRun {
   skipped    Int       @default(0)
   errors     Int       @default(0)
   errorLog   String?
+  totalDurationMs Int?
+  totalTokens     Int?
+  avgLatencyMs    Int?
   startedAt  DateTime  @default(now())
   finishedAt DateTime?
+}
+
+model DailyMetrics {
+  id             String   @id @default(cuid())
+  date           DateTime
+  source         String
+  totalRuns      Int      @default(0)
+  successRuns    Int      @default(0)
+  totalScraped   Int      @default(0)
+  totalProcessed Int      @default(0)
+  totalErrors    Int      @default(0)
+  totalTokens    Int      @default(0)
+  totalDurationMs Int     @default(0)
+  estimatedCost  Float    @default(0)
+
+  @@unique([date, source])
 }
 
 model SourceConfig {
@@ -87,11 +106,13 @@ model SourceConfig {
 }
 
 model AIConfig {
-  id        String   @id @default(cuid())
-  provider  String
-  model     String
-  apiKey    String
-  baseUrl   String?
-  isActive  Boolean  @default(false)
-  updatedAt DateTime @updatedAt
+  id               String   @id @default(cuid())
+  provider         String
+  model            String
+  apiKey           String
+  baseUrl          String?
+  inputPricePer1K  Float?
+  outputPricePer1K Float?
+  isActive         Boolean  @default(false)
+  updatedAt        DateTime @updatedAt
 }

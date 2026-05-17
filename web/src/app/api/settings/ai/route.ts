@@ -23,6 +23,8 @@ export async function POST(request: NextRequest) {
       model: body.model,
       apiKey: body.apiKey !== "••••••••" ? encrypt(body.apiKey) : "",
       baseUrl: body.baseUrl ?? null,
+      inputPricePer1K: body.inputPricePer1K ? parseFloat(body.inputPricePer1K) : null,
+      outputPricePer1K: body.outputPricePer1K ? parseFloat(body.outputPricePer1K) : null,
       isActive: true,
     },
   })
