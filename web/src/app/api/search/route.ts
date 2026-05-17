@@ -17,7 +17,6 @@ export async function GET(request: NextRequest) {
   sinceDate.setDate(sinceDate.getDate() - days)
 
   const whereClause: Record<string, unknown> = {
-    embedding: { not: null },
     createdAt: { gte: sinceDate },
   }
 
