@@ -26,6 +26,7 @@ interface SignalCardProps {
     deepDiveReason: string | null
   } | null
   onTagClick?: (tag: string) => void
+  onUnsave?: () => void
 }
 
 function formatCount(n: number): string {
@@ -40,6 +41,7 @@ export function SignalCard({
   summary,
   trendingRank,
   onTagClick,
+  onUnsave,
 }: SignalCardProps) {
   const metric = metadata?.stars ?? metadata?.score ?? null
 
@@ -60,6 +62,17 @@ export function SignalCard({
           <h3 className="text-sm font-medium text-foreground truncate">{title}</h3>
         </div>
         <SourceBadge source={source} />
+        {onUnsave && (
+          <button
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); onUnsave() }}
+            className="text-muted hover:text-red-500 transition-colors flex-shrink-0 ml-1"
+            title="取消收藏"
+          >
+            <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M18 6L6 18M6 6l12 12" />
+            </svg>
+          </button>
+        )}
       </div>
 
       {metric != null && (

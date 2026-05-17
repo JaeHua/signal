@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useParams } from "next/navigation"
 import { ArrowLeft, ExternalLink, Bookmark, BookmarkCheck } from "lucide-react"
 import Link from "next/link"
@@ -20,6 +20,13 @@ export default function SignalDetail() {
   const { data, isLoading } = useSWR(`/api/signals/${id}`, fetcher)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+
+  useEffect(() => {
+    if (!session?.user) return
+    fetch("/api/saved").then(r => r.json()).then(d => {
+      if (d.items?.some((s: { id: string }) => s.id === id)) setSaved(true)
+    }).catch(() => {})
+  }, [session, id])
 
   const handleSave = async () => {
     if (!session?.user) { alert("请先登录"); return }

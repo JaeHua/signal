@@ -17,13 +17,14 @@ interface SignalGridProps {
     } | null
   }>
   onTagClick?: (tag: string) => void
+  onUnsave?: (id: string) => void
 }
 
-export function SignalGrid({ items, onTagClick }: SignalGridProps) {
+export function SignalGrid({ items, onTagClick, onUnsave }: SignalGridProps) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
       {items.map((item) => (
-        <SignalCard key={item.id} {...item} metadata={item.metadata as Record<string, unknown> | null} onTagClick={onTagClick} />
+        <SignalCard key={item.id} {...item} metadata={item.metadata as Record<string, unknown> | null} onTagClick={onTagClick} onUnsave={onUnsave ? () => onUnsave(item.id) : undefined} />
       ))}
     </div>
   )

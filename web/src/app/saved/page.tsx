@@ -11,7 +11,16 @@ import { useSaved } from "@/hooks/use-saved"
 
 export default function SavedPage() {
   const { data: session, status } = useSession()
-  const { items, isLoading } = useSaved()
+  const { items, isLoading, mutate } = useSaved()
+
+  const handleUnsave = async (id: string) => {
+    await fetch("/api/saved", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ signalId: id }),
+    })
+    mutate()
+  }
 
   if (status === "loading") {
     return (
@@ -59,7 +68,7 @@ export default function SavedPage() {
             <Link href="/"><Button variant="outline" size="sm">去 Dashboard 看看吧</Button></Link>
           </div>
         ) : (
-          <SignalGrid items={items} />
+          <SignalGrid items={items} onUnsave={handleUnsave} />
         )}
       </main>
     </div>
