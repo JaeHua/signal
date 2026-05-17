@@ -113,6 +113,9 @@ async function runSourcePipeline(sourceKey: string): Promise<void> {
     await prisma.signalSummary.deleteMany({
       where: { summaryDate: { lt: sevenDaysAgo } },
     })
+    await prisma.pipelineRun.deleteMany({
+      where: { startedAt: { lt: sevenDaysAgo } },
+    })
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
     errorMessages.push(message)

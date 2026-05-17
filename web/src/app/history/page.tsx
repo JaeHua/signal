@@ -27,10 +27,10 @@ export default function HistoryPage() {
 
         <section className="mb-10">
           <h2 className="text-sm font-semibold text-foreground mb-4">运行日志</h2>
-          <div className="space-y-1">
+          <div className="space-y-1 max-h-64 overflow-y-auto rounded-xl border border-border p-2">
             {runs?.items?.length > 0 ? (
               runs.items.map((run: { id: string; source: string; status: string; scraped: number; processed: number; skipped: number; errors: number; startedAt: string }) => (
-                <div key={run.id} className="flex items-center gap-3 text-sm py-1.5 border-b border-border">
+                <div key={run.id} className="flex items-center gap-3 text-sm py-1.5 px-1 border-b border-border last:border-0">
                   <span className={
                     run.status === "success" ? "text-green-600" :
                     run.status === "partial" ? "text-yellow-600" : "text-red-600"
@@ -38,13 +38,12 @@ export default function HistoryPage() {
                   <span className="text-xs text-muted w-16 tabular-nums">{formatTime(run.startedAt)}</span>
                   <span className="text-xs font-medium w-24">{run.source}</span>
                   <span className="text-xs text-muted flex-1">
-                    {run.scraped} scraped, {run.processed} processed, {run.skipped} skipped
-                    {run.errors > 0 ? `, ${run.errors} errors` : ""}
+                    {run.scraped} scraped, {run.processed} processed{run.skipped > 0 ? `, ${run.skipped} skipped` : ""}{run.errors > 0 ? `, ${run.errors} errors` : ""}
                   </span>
                 </div>
               ))
             ) : (
-              <p className="text-sm text-muted">暂无运行记录</p>
+              <p className="text-sm text-muted px-1 py-3">暂无运行记录</p>
             )}
           </div>
         </section>
