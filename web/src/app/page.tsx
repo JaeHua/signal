@@ -46,7 +46,7 @@ export default function Dashboard() {
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-lg font-semibold text-foreground tracking-tight">今日信息流</h1>
-            <p className="text-sm text-muted mt-1">AI 分析与筛选，从噪音中提取信号</p>
+
           </div>
           <div className="flex items-center gap-3">
             <select
