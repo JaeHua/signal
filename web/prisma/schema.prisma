@@ -7,37 +7,38 @@ datasource db {
 }
 
 model User {
-  id          String      @id @default(cuid())
-  githubId    Int         @unique
-  githubLogin String
-  name        String?
-  email       String?
-  avatarUrl   String?
-  createdAt   DateTime    @default(now())
-  savedRepos  SavedRepo[]
+  id           String        @id @default(cuid())
+  githubId     Int           @unique
+  githubLogin  String
+  name         String?
+  email        String?
+  avatarUrl    String?
+  createdAt    DateTime      @default(now())
+  savedSignals SavedSignal[]
 }
 
-model Repo {
-  id           String        @id @default(cuid())
-  name         String        @unique
-  owner        String
-  repo         String
+model Signal {
+  id           String          @id @default(cuid())
+  source       String
+  sourceId     String
+  title        String
   url          String
   description  String?
-  language     String?
-  stars        Int?
-  forks        Int?
+  metadata     String?
+  publishedAt  DateTime?
   trendingDate DateTime?
   trendingRank Int?
-  createdAt    DateTime      @default(now())
-  summaries    RepoSummary[]
-  savedBy      SavedRepo[]
+  createdAt    DateTime        @default(now())
+  summaries    SignalSummary[]
+  savedBy      SavedSignal[]
+
+  @@unique([source, sourceId])
 }
 
-model RepoSummary {
+model SignalSummary {
   id             String   @id @default(cuid())
-  repoId         String
-  repo           Repo     @relation(fields: [repoId], references: [id])
+  signalId       String
+  signal         Signal   @relation(fields: [signalId], references: [id])
   summaryDate    DateTime @default(now())
   aiSummary      String
   techTags       String
@@ -47,16 +48,49 @@ model RepoSummary {
   provider       String
   createdAt      DateTime @default(now())
 
-  @@index([repoId, summaryDate])
+  @@index([signalId, summaryDate])
 }
 
-model SavedRepo {
+model SavedSignal {
   id        String   @id @default(cuid())
   userId    String
-  repoId    String
+  signalId  String
   user      User     @relation(fields: [userId], references: [id])
-  repo      Repo     @relation(fields: [repoId], references: [id])
+  signal    Signal   @relation(fields: [signalId], references: [id])
   createdAt DateTime @default(now())
 
-  @@unique([userId, repoId])
+  @@unique([userId, signalId])
+}
+
+model PipelineRun {
+  id         String    @id @default(cuid())
+  source     String
+  status     String
+  scraped    Int       @default(0)
+  processed  Int       @default(0)
+  skipped    Int       @default(0)
+  errors     Int       @default(0)
+  errorLog   String?
+  startedAt  DateTime  @default(now())
+  finishedAt DateTime?
+}
+
+model SourceConfig {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  enabled   Boolean  @default(true)
+  maxItems  Int      @default(10)
+  frequency String   @default("6h")
+  config    String?
+  updatedAt DateTime @updatedAt
+}
+
+model AIConfig {
+  id        String   @id @default(cuid())
+  provider  String
+  model     String
+  apiKey    String
+  baseUrl   String?
+  isActive  Boolean  @default(false)
+  updatedAt DateTime @updatedAt
 }
