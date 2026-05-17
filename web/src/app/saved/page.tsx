@@ -2,8 +2,8 @@
 
 import { signIn, useSession } from "next-auth/react"
 import { Header } from "@/components/layout/header"
-import { RepoGrid } from "@/components/repo-grid"
-import { RepoCardSkeleton } from "@/components/skeleton"
+import { SignalGrid } from "@/components/signal-grid"
+import { SignalCardSkeleton } from "@/components/skeleton"
 import { Button } from "@/components/ui/button"
 import { Bookmark } from "lucide-react"
 import Link from "next/link"
@@ -18,10 +18,8 @@ export default function SavedPage() {
       <div className="min-h-screen flex flex-col">
         <Header />
         <main className="flex-1 max-w-7xl mx-auto w-full px-6 py-8">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <RepoCardSkeleton key={i} />
-            ))}
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            {Array.from({ length: 3 }).map((_, i) => (<SignalCardSkeleton key={i} />))}
           </div>
         </main>
       </div>
@@ -36,9 +34,7 @@ export default function SavedPage() {
           <div className="flex flex-col items-center justify-center py-20 text-center">
             <Bookmark className="h-8 w-8 text-muted mb-4" />
             <p className="text-muted text-sm mb-4">请先登录以查看收藏</p>
-            <Button variant="outline" size="sm" onClick={() => signIn("github")}>
-              使用 GitHub 登录
-            </Button>
+            <Button variant="outline" size="sm" onClick={() => signIn("github")}>使用 GitHub 登录</Button>
           </div>
         </main>
       </div>
@@ -53,23 +49,17 @@ export default function SavedPage() {
           <h1 className="text-lg font-semibold text-foreground tracking-tight">我的收藏</h1>
         </div>
         {isLoading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <RepoCardSkeleton key={i} />
-            ))}
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            {Array.from({ length: 3 }).map((_, i) => (<SignalCardSkeleton key={i} />))}
           </div>
         ) : items.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center">
             <Bookmark className="h-8 w-8 text-muted mb-4" />
             <p className="text-muted text-sm mb-4">还没有收藏项目</p>
-            <Link href="/">
-              <Button variant="outline" size="sm">
-                去 Dashboard 看看吧
-              </Button>
-            </Link>
+            <Link href="/"><Button variant="outline" size="sm">去 Dashboard 看看吧</Button></Link>
           </div>
         ) : (
-          <RepoGrid items={items} />
+          <SignalGrid items={items} />
         )}
       </main>
     </div>

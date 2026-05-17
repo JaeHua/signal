@@ -6,6 +6,11 @@ import { ThemeToggle } from "./theme-toggle"
 import { SearchBar } from "./search-bar"
 import { UserMenu } from "./user-menu"
 
+const navLinks = [
+  { href: "/history", label: "日志" },
+  { href: "/settings", label: "设置" },
+]
+
 interface HeaderProps {
   searchItems?: Array<{ id: string; name: string; techTags?: string[]; aiSummary?: string }>
 }
@@ -19,6 +24,12 @@ export function Header({ searchItems = [] }: HeaderProps) {
           Signal
         </Link>
         <div className="flex-1" />
+        {navLinks.map((link) => (
+          <Link key={link.href} href={link.href}
+            className="hidden sm:block text-xs text-muted hover:text-foreground transition-colors">
+            {link.label}
+          </Link>
+        ))}
         <SearchBar items={searchItems} />
         <ThemeToggle />
         <UserMenu />

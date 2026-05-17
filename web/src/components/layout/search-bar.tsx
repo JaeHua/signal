@@ -5,7 +5,7 @@ import { Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useRouter } from "next/navigation"
 
-interface RepoItem {
+interface SearchItem {
   id: string
   name: string
   techTags?: string[]
@@ -13,7 +13,7 @@ interface RepoItem {
 }
 
 interface SearchBarProps {
-  items: RepoItem[]
+  items: SearchItem[]
 }
 
 export function SearchBar({ items }: SearchBarProps) {
@@ -96,7 +96,7 @@ export function SearchBar({ items }: SearchBarProps) {
               <button
                 key={item.id}
                 onClick={() => {
-                  router.push(`/repo/${item.id}`)
+                  router.push(`/signals/${item.id}`)
                   setOpen(false)
                   setQuery("")
                 }}

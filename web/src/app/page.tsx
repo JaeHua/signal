@@ -3,19 +3,27 @@
 import { useState } from "react"
 import { RefreshCw } from "lucide-react"
 import { Header } from "@/components/layout/header"
-import { RepoGrid } from "@/components/repo-grid"
+import { SignalGrid } from "@/components/signal-grid"
 import { DashboardSkeleton } from "@/components/skeleton"
+import { SourceTabs } from "@/components/source-tabs"
 import { Button } from "@/components/ui/button"
-import { useTrending } from "@/hooks/use-trending"
+import { useSignals } from "@/hooks/use-signals"
+
+const TABS = [
+  { key: "all", label: "全部" },
+  { key: "github", label: "GitHub" },
+  { key: "hackernews", label: "Hacker News" },
+]
 
 export default function Dashboard() {
+  const [source, setSource] = useState("all")
   const [limit, setLimit] = useState(10)
-  const { items, isLoading, mutate } = useTrending(limit)
+  const { items, isLoading, mutate } = useSignals(source, limit)
   const [refreshing, setRefreshing] = useState(false)
 
   const handleRefresh = async () => {
     setRefreshing(true)
-    await fetch("/api/trending/refresh", { method: "POST" })
+    await fetch("/api/signals/refresh", { method: "POST" })
     setTimeout(() => {
       mutate()
       setRefreshing(false)
@@ -25,22 +33,20 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen flex flex-col">
       <Header
-        searchItems={items.map((item) => ({
-          id: item.id,
-          name: item.name,
-          techTags: item.summary?.techTags,
-          aiSummary: item.summary?.aiSummary,
-        }))}
+        searchItems={items.map(
+          (item: { id: string; title: string; summary?: { techTags?: string[]; aiSummary?: string } }) => ({
+            id: item.id,
+            name: item.title,
+            techTags: item.summary?.techTags,
+            aiSummary: item.summary?.aiSummary,
+          })
+        )}
       />
       <main className="flex-1 max-w-7xl mx-auto w-full px-6 py-8">
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-lg font-semibold text-foreground tracking-tight">
-              今日 GitHub Trending
-            </h1>
-            <p className="text-sm text-muted mt-1">
-              AI 分析与筛选，从噪音中提取信号
-            </p>
+            <h1 className="text-lg font-semibold text-foreground tracking-tight">今日信息流</h1>
+            <p className="text-sm text-muted mt-1">AI 分析与筛选，从噪音中提取信号</p>
           </div>
           <div className="flex items-center gap-3">
             <select
@@ -48,10 +54,10 @@ export default function Dashboard() {
               onChange={(e) => setLimit(Number(e.target.value))}
               className="text-xs bg-transparent border border-border rounded-lg px-2.5 py-1.5 text-muted focus:outline-none focus:border-accent"
             >
-              <option value={5}>5 个</option>
-              <option value={10}>10 个</option>
-              <option value={20}>20 个</option>
-              <option value={25}>25 个</option>
+              <option value={5}>5</option>
+              <option value={10}>10</option>
+              <option value={20}>20</option>
+              <option value={25}>25</option>
             </select>
             <Button
               variant="ghost"
@@ -61,11 +67,13 @@ export default function Dashboard() {
               className="gap-1.5 text-muted hover:text-foreground"
             >
               <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} />
-              <span className="hidden sm:inline">
-                {refreshing ? "刷新中..." : "刷新"}
-              </span>
+              <span className="hidden sm:inline">{refreshing ? "刷新中..." : "刷新"}</span>
             </Button>
           </div>
+        </div>
+
+        <div className="mb-6">
+          <SourceTabs tabs={TABS} active={source} onChange={setSource} />
         </div>
 
         {refreshing && (
@@ -85,7 +93,7 @@ export default function Dashboard() {
             </Button>
           </div>
         ) : (
-          <RepoGrid items={items} />
+          <SignalGrid items={items} />
         )}
       </main>
       <footer className="border-t border-border py-6 text-center text-xs text-muted">
