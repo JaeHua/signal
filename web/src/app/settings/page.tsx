@@ -33,7 +33,10 @@ export default function SettingsPage() {
   }, [sourcesData])
 
   useEffect(() => {
-    fetch("/api/settings/retention").then(r => r.json()).then(d => setRetentionDays(d.retentionDays ?? 7))
+    fetch("/api/settings/retention")
+      .then(r => r.ok ? r.json() : { retentionDays: 7 })
+      .then(d => setRetentionDays(d.retentionDays ?? 7))
+      .catch(() => setRetentionDays(7))
   }, [])
 
   useEffect(() => {
