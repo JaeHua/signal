@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react"
 import useSWR from "swr"
+import { CheckCircle, XCircle } from "lucide-react"
 import { Header } from "@/components/layout/header"
 import { Button } from "@/components/ui/button"
 
@@ -15,6 +16,7 @@ export default function SettingsPage() {
     provider: "deepseek", model: "deepseek-chat", apiKey: "", baseUrl: "",
   })
   const [sources, setSources] = useState<Array<{ key: string; enabled: boolean; maxItems: number }>>([])
+  const [status, setStatus] = useState<{ type: "success" | "error"; message: string } | null>(null)
 
   useEffect(() => {
     if (aiData?.items?.[0]) {
@@ -27,22 +29,48 @@ export default function SettingsPage() {
     if (sourcesData?.items) setSources(sourcesData.items)
   }, [sourcesData])
 
+  useEffect(() => {
+    if (status) {
+      const timer = setTimeout(() => setStatus(null), 3000)
+      return () => clearTimeout(timer)
+    }
+  }, [status])
+
   const saveAI = useCallback(async () => {
-    await fetch("/api/settings/ai", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(aiForm),
-    })
-    mutateAI()
+    try {
+      const res = await fetch("/api/settings/ai", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(aiForm),
+      })
+      if (res.ok) {
+        setStatus({ type: "success", message: "AI 配置已保存" })
+        mutateAI()
+      } else {
+        const err = await res.json()
+        setStatus({ type: "error", message: err.error ?? "保存失败" })
+      }
+    } catch {
+      setStatus({ type: "error", message: "网络错误，请重试" })
+    }
   }, [aiForm, mutateAI])
 
   const toggleSource = useCallback(async (key: string, updates: Record<string, unknown>) => {
-    await fetch("/api/settings/sources", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ key, ...updates }),
-    })
-    mutateSources()
+    try {
+      const res = await fetch("/api/settings/sources", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key, ...updates }),
+      })
+      if (res.ok) {
+        setStatus({ type: "success", message: `${key} 配置已更新` })
+        mutateSources()
+      } else {
+        setStatus({ type: "error", message: "更新失败" })
+      }
+    } catch {
+      setStatus({ type: "error", message: "网络错误，请重试" })
+    }
   }, [mutateSources])
 
   return (
@@ -50,6 +78,20 @@ export default function SettingsPage() {
       <Header />
       <main className="flex-1 max-w-2xl mx-auto w-full px-6 py-8">
         <h1 className="text-lg font-semibold text-foreground tracking-tight mb-8">设置</h1>
+
+        {status && (
+          <div className={`fixed top-16 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium shadow-lg transition-all ${
+            status.type === "success"
+              ? "bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-300"
+              : "bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-300"
+          }`}>
+            {status.type === "success"
+              ? <CheckCircle className="h-4 w-4" />
+              : <XCircle className="h-4 w-4" />
+            }
+            {status.message}
+          </div>
+        )}
 
         <section className="mb-10">
           <h2 className="text-sm font-semibold text-foreground mb-4">AI 模型</h2>
