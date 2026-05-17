@@ -36,6 +36,7 @@ export async function GET(request: NextRequest) {
     summaries.map((s) => ({
       id: s.signal.id,
       signalId: s.signalId,
+      title: s.signal.title,
       aiSummary: s.aiSummary,
       techTags: s.techTags,
       embedding: s.embedding,
