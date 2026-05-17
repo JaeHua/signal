@@ -1,6 +1,8 @@
 import { prisma } from "@/lib/prisma"
 import { createSourceProvider } from "@/providers/source"
 import { createAIProvider, type AIProviderType } from "@/providers/ai"
+import { decrypt } from "@/lib/encryption"
+import { seedDefaults } from "@/lib/seed"
 
 let isRunning = false
 
@@ -8,67 +10,64 @@ export function isPipelineRunning(): boolean {
   return isRunning
 }
 
-export async function runPipeline(): Promise<{
-  scraped: number
-  processed: number
-  skipped: number
-  errors: number
-}> {
-  if (isRunning) {
-    return { scraped: 0, processed: 0, skipped: 0, errors: 0 }
+async function runSourcePipeline(sourceKey: string): Promise<void> {
+  const config = await prisma.sourceConfig.findUnique({ where: { key: sourceKey } })
+  if (!config?.enabled) {
+    console.log(`[Pipeline] Source "${sourceKey}" is disabled, skipping`)
+    return
   }
 
-  isRunning = true
+  const run = await prisma.pipelineRun.create({
+    data: { source: sourceKey, status: "running", startedAt: new Date() },
+  })
+
   let scraped = 0
   let processed = 0
   let skipped = 0
   let errors = 0
+  const errorMessages: string[] = []
 
   try {
-    const providerType = (process.env.AI_PROVIDER ?? "deepseek") as AIProviderType
-    const maxItems = parseInt(process.env.TRENDING_COUNT ?? "10", 10)
-    const aiProvider = createAIProvider(providerType)
+    const sourceProvider = createSourceProvider(sourceKey)
+    const items = await sourceProvider.fetchItems(config.maxItems)
+    scraped = items.length
 
-    const sourceProvider = createSourceProvider()
+    const aiConfig = await prisma.aIConfig.findFirst({ where: { isActive: true } })
+    if (!aiConfig) {
+      throw new Error("No active AI config found")
+    }
 
-    const items = await sourceProvider.fetchTrending()
-    const toProcess = items.slice(0, maxItems)
-    scraped = toProcess.length
+    const aiProvider = createAIProvider(aiConfig.provider as AIProviderType)
 
     const today = new Date()
     today.setHours(0, 0, 0, 0)
 
-    for (const item of toProcess) {
+    for (const item of items) {
       try {
-        const repo = await prisma.repo.upsert({
-          where: { name: item.name },
+        const signal = await prisma.signal.upsert({
+          where: { source_sourceId: { source: item.source, sourceId: item.sourceId } },
           create: {
-            name: item.name,
-            owner: item.owner,
-            repo: item.repo,
+            source: item.source,
+            sourceId: item.sourceId,
+            title: item.title,
             url: item.url,
             description: item.description,
-            language: item.language,
-            stars: item.stars,
-            forks: item.forks,
+            metadata: JSON.stringify(item.metadata),
+            publishedAt: item.publishedAt ? new Date(item.publishedAt) : null,
             trendingDate: new Date(),
             trendingRank: item.rank,
           },
           update: {
+            title: item.title,
             description: item.description,
-            language: item.language,
-            stars: item.stars,
-            forks: item.forks,
+            metadata: JSON.stringify(item.metadata),
             trendingDate: new Date(),
             trendingRank: item.rank,
           },
         })
 
-        const existingSummary = await prisma.repoSummary.findFirst({
-          where: {
-            repoId: repo.id,
-            summaryDate: { gte: today },
-          },
+        const existingSummary = await prisma.signalSummary.findFirst({
+          where: { signalId: signal.id, summaryDate: { gte: today } },
         })
 
         if (existingSummary) {
@@ -76,11 +75,19 @@ export async function runPipeline(): Promise<{
           continue
         }
 
-        const summary = await aiProvider.generateSummary(item)
+        const aiItem = {
+          name: item.title,
+          owner: (item.metadata.author as string) ?? (item.metadata.language as string) ?? "",
+          repo: "",
+          description: item.description,
+          language: (item.metadata.language as string) ?? null,
+        }
 
-        await prisma.repoSummary.create({
+        const summary = await aiProvider.generateSummary(aiItem)
+
+        await prisma.signalSummary.create({
           data: {
-            repoId: repo.id,
+            signalId: signal.id,
             summaryDate: new Date(),
             aiSummary: summary.summary,
             techTags: JSON.stringify(summary.techTags),
@@ -93,18 +100,47 @@ export async function runPipeline(): Promise<{
 
         processed++
       } catch (error) {
-        console.error(`Failed to process ${item.name}:`, error)
+        const message = error instanceof Error ? error.message : String(error)
+        console.error(`[Pipeline] Failed to process ${item.title}:`, message)
+        errorMessages.push(`${item.title}: ${message}`)
         errors++
       }
     }
 
     const sevenDaysAgo = new Date()
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
-    await prisma.repoSummary.deleteMany({
+    await prisma.signalSummary.deleteMany({
       where: { summaryDate: { lt: sevenDaysAgo } },
     })
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    errorMessages.push(message)
+  }
 
-    return { scraped, processed, skipped, errors }
+  await prisma.pipelineRun.update({
+    where: { id: run.id },
+    data: {
+      status: errors > 0 ? (scraped > 0 ? "partial" : "failed") : "success",
+      scraped,
+      processed,
+      skipped,
+      errors,
+      errorLog: errorMessages.length > 0 ? JSON.stringify(errorMessages) : null,
+      finishedAt: new Date(),
+    },
+  })
+}
+
+export async function runPipeline(): Promise<void> {
+  if (isRunning) return
+  isRunning = true
+
+  try {
+    await seedDefaults()
+    const configs = await prisma.sourceConfig.findMany({ where: { enabled: true } })
+    for (const config of configs) {
+      await runSourcePipeline(config.key)
+    }
   } finally {
     isRunning = false
   }

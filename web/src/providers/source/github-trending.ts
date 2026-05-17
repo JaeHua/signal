@@ -1,5 +1,5 @@
 import * as cheerio from "cheerio"
-import { SourceProvider, TrendingItem } from "./types"
+import { SourceProvider, SignalItem } from "./types"
 
 export function createGitHubTrendingProvider(config?: {
   language?: string
@@ -9,15 +9,13 @@ export function createGitHubTrendingProvider(config?: {
   const since = config?.since ?? "daily"
 
   return {
-    name: "github-trending",
-    async fetchTrending(): Promise<TrendingItem[]> {
+    name: "github",
+    async fetchItems(maxItems: number): Promise<SignalItem[]> {
       const langPath = language ? `/${language}` : ""
       const url = `https://github.com/trending${langPath}?since=${since}`
 
       const response = await fetch(url, {
-        headers: {
-          "User-Agent": "Mozilla/5.0 (compatible; SignalBot/1.0)",
-        },
+        headers: { "User-Agent": "Mozilla/5.0 (compatible; SignalBot/1.0)" },
       })
 
       if (!response.ok) {
@@ -26,12 +24,13 @@ export function createGitHubTrendingProvider(config?: {
 
       const html = await response.text()
       const $ = cheerio.load(html)
-      const items: TrendingItem[] = []
+      const items: SignalItem[] = []
 
       try {
         $("article.Box-row").each((index, element) => {
-          const $el = $(element)
+          if (items.length >= maxItems) return
 
+          const $el = $(element)
           const fullName = $el.find("h2 a").text().trim().replace(/\s+/g, "")
           const [owner, repo] = fullName.split("/")
           const urlPath = $el.find("h2 a").attr("href") ?? ""
@@ -45,15 +44,15 @@ export function createGitHubTrendingProvider(config?: {
           const forks = forksStr ? parseInt(forksStr.replace(/,/g, ""), 10) || null : null
 
           if (owner && repo) {
+            const sourceId = `${owner}/${repo}`
             items.push({
-              name: fullName,
-              owner,
-              repo,
+              source: "github",
+              sourceId,
+              title: sourceId,
               url: `https://github.com${urlPath}`,
               description,
-              language,
-              stars,
-              forks,
+              publishedAt: null,
+              metadata: { stars: stars ?? 0, forks: forks ?? 0, language: language ?? "Unknown" },
               rank: index + 1,
             })
           }

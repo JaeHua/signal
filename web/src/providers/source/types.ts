@@ -1,16 +1,15 @@
-export interface TrendingItem {
-  name: string
-  owner: string
-  repo: string
+export interface SignalItem {
+  source: string
+  sourceId: string
+  title: string
   url: string
   description: string | null
-  language: string | null
-  stars: number | null
-  forks: number | null
+  publishedAt: string | null
+  metadata: Record<string, unknown>
   rank: number
 }
 
 export interface SourceProvider {
   name: string
-  fetchTrending(): Promise<TrendingItem[]>
+  fetchItems(maxItems: number): Promise<SignalItem[]>
 }
