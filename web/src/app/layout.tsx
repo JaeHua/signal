@@ -5,7 +5,8 @@ import "./globals.css"
 
 export const metadata: Metadata = {
   title: "Signal",
-  description: "AI-powered GitHub trending insights",
+  description: "AI-powered information understanding and organization",
+  icons: { icon: "/favicon.svg" },
 }
 
 export default function RootLayout({
