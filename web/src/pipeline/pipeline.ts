@@ -9,6 +9,11 @@ export function isPipelineRunning(): boolean {
   return isRunning
 }
 
+async function getRetentionDays(): Promise<number> {
+  const config = await prisma.appConfig.findUnique({ where: { id: "retention_days" } })
+  return config ? parseInt(config.value, 10) || 7 : 7
+}
+
 function estimateTokens(text: string): number {
   return Math.ceil(text.length / 4)
 }
@@ -148,11 +153,12 @@ async function runSourcePipeline(sourceKey: string): Promise<void> {
       }
     }
 
-    const sevenDaysAgo = new Date()
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
-    await prisma.signalSummary.deleteMany({ where: { summaryDate: { lt: sevenDaysAgo } } })
-    await prisma.pipelineRun.deleteMany({ where: { startedAt: { lt: sevenDaysAgo } } })
-    await prisma.dailyMetrics.deleteMany({ where: { date: { lt: sevenDaysAgo } } })
+    const retentionDays = await getRetentionDays()
+    const cutoff = new Date()
+    cutoff.setDate(cutoff.getDate() - retentionDays)
+    await prisma.signalSummary.deleteMany({ where: { summaryDate: { lt: cutoff } } })
+    await prisma.pipelineRun.deleteMany({ where: { startedAt: { lt: cutoff } } })
+    await prisma.dailyMetrics.deleteMany({ where: { date: { lt: cutoff } } })
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
     errorMessages.push(message)

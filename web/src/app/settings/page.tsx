@@ -18,6 +18,7 @@ export default function SettingsPage() {
   })
   const [sources, setSources] = useState<Array<{ key: string; enabled: boolean; maxItems: number }>>([])
   const [status, setStatus] = useState<{ type: "success" | "error"; message: string } | null>(null)
+  const [retentionDays, setRetentionDays] = useState(7)
 
   useEffect(() => {
     if (aiData?.items?.[0]) {
@@ -30,6 +31,10 @@ export default function SettingsPage() {
   useEffect(() => {
     if (sourcesData?.items) setSources(sourcesData.items)
   }, [sourcesData])
+
+  useEffect(() => {
+    fetch("/api/settings/retention").then(r => r.json()).then(d => setRetentionDays(d.retentionDays ?? 7))
+  }, [])
 
   useEffect(() => {
     if (status) {
@@ -162,6 +167,32 @@ export default function SettingsPage() {
                 </div>
               </div>
             ))}
+          </div>
+        </section>
+
+        <section>
+          <h2 className="text-sm font-semibold text-foreground mb-4">数据保留</h2>
+          <div>
+            <label className="text-xs text-muted block mb-1">AI 摘要保留天数</label>
+            <select value={retentionDays}
+              onChange={async (e) => {
+                const v = Number(e.target.value)
+                setRetentionDays(v)
+                await fetch("/api/settings/retention", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ retentionDays: v }),
+                })
+                setStatus({ type: "success", message: `保留天数已更新为 ${v} 天` })
+              }}
+              className="text-sm bg-transparent border border-border rounded-lg px-3 py-2 text-foreground">
+              <option value={7}>7 天</option>
+              <option value={14}>14 天</option>
+              <option value={30}>30 天</option>
+              <option value={90}>90 天</option>
+              <option value={365}>365 天</option>
+            </select>
+            <p className="text-[11px] text-muted mt-1.5">超过天数的 AI 摘要和运行日志将被自动清理</p>
           </div>
         </section>
       </main>
