@@ -16,13 +16,14 @@ interface SignalGridProps {
       deepDiveReason: string | null
     } | null
   }>
+  onTagClick?: (tag: string) => void
 }
 
-export function SignalGrid({ items }: SignalGridProps) {
+export function SignalGrid({ items, onTagClick }: SignalGridProps) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
       {items.map((item) => (
-        <SignalCard key={item.id} {...item} metadata={item.metadata as Record<string, unknown> | null} />
+        <SignalCard key={item.id} {...item} metadata={item.metadata as Record<string, unknown> | null} onTagClick={onTagClick} />
       ))}
     </div>
   )

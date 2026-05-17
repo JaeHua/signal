@@ -25,6 +25,7 @@ interface SignalCardProps {
     worthDeepDive: boolean
     deepDiveReason: string | null
   } | null
+  onTagClick?: (tag: string) => void
 }
 
 function formatCount(n: number): string {
@@ -38,6 +39,7 @@ export function SignalCard({
   metadata,
   summary,
   trendingRank,
+  onTagClick,
 }: SignalCardProps) {
   const metric = metadata?.stars ?? metadata?.score ?? null
 
@@ -47,7 +49,7 @@ export function SignalCard({
       className={cn(
         "group flex flex-col gap-2.5 sm:gap-3 p-4 sm:p-5 rounded-xl sm:rounded-2xl",
         "bg-card border border-border",
-        "hover:border-foreground/10 transition-colors duration-200",
+        "hover:border-foreground/10 hover:scale-[1.01] hover:shadow-sm transition-all duration-200",
       )}
     >
       <div className="flex items-start justify-between gap-2">
@@ -77,12 +79,13 @@ export function SignalCard({
       {summary?.techTags && summary.techTags.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
           {summary.techTags.map((tag) => (
-            <span
+            <button
               key={tag}
-              className="text-[11px] px-2 py-0.5 rounded-md bg-muted-bg text-muted font-medium"
+              onClick={(e) => { e.preventDefault(); onTagClick?.(tag) }}
+              className="text-[11px] px-2 py-0.5 rounded-md bg-muted-bg text-muted font-medium hover:bg-border hover:text-foreground transition-colors cursor-pointer"
             >
               {tag}
-            </span>
+            </button>
           ))}
         </div>
       )}
