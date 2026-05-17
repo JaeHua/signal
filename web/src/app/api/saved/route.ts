@@ -8,33 +8,24 @@ export async function GET() {
     return Response.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  const saved = await prisma.savedRepo.findMany({
+  const saved = await prisma.savedSignal.findMany({
     where: { userId: session.user.id },
     include: {
-      repo: {
-        include: {
-          summaries: {
-            orderBy: { createdAt: "desc" },
-            take: 1,
-          },
-        },
+      signal: {
+        include: { summaries: { orderBy: { createdAt: "desc" }, take: 1 } },
       },
     },
     orderBy: { createdAt: "desc" },
   })
 
   const items = saved.map((s) => {
-    const summary = s.repo.summaries[0] ?? null
+    const summary = s.signal.summaries[0] ?? null
     return {
-      id: s.repo.id,
-      name: s.repo.name,
-      owner: s.repo.owner,
-      repo: s.repo.repo,
-      url: s.repo.url,
-      description: s.repo.description,
-      language: s.repo.language,
-      stars: s.repo.stars,
-      forks: s.repo.forks,
+      id: s.signal.id,
+      source: s.signal.source,
+      title: s.signal.title,
+      url: s.signal.url,
+      metadata: s.signal.metadata ? JSON.parse(s.signal.metadata) : null,
       savedAt: s.createdAt,
       summary: summary
         ? {
@@ -57,28 +48,20 @@ export async function POST(request: NextRequest) {
     return Response.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  const { repoId } = await request.json()
+  const { signalId } = await request.json()
 
-  if (!repoId) {
-    return Response.json({ error: "repoId is required" }, { status: 400 })
+  if (!signalId) {
+    return Response.json({ error: "signalId is required" }, { status: 400 })
   }
 
-  const repo = await prisma.repo.findUnique({ where: { id: repoId } })
-  if (!repo) {
-    return Response.json({ error: "Repo not found" }, { status: 404 })
-  }
-
-  const saved = await prisma.savedRepo.upsert({
+  await prisma.savedSignal.upsert({
     where: {
-      userId_repoId: {
+      userId_signalId: {
         userId: session.user.id,
-        repoId,
+        signalId,
       },
     },
-    create: {
-      userId: session.user.id,
-      repoId,
-    },
+    create: { userId: session.user.id, signalId },
     update: {},
   })
 
@@ -91,17 +74,14 @@ export async function DELETE(request: NextRequest) {
     return Response.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  const { repoId } = await request.json()
+  const { signalId } = await request.json()
 
-  if (!repoId) {
-    return Response.json({ error: "repoId is required" }, { status: 400 })
+  if (!signalId) {
+    return Response.json({ error: "signalId is required" }, { status: 400 })
   }
 
-  await prisma.savedRepo.deleteMany({
-    where: {
-      userId: session.user.id,
-      repoId,
-    },
+  await prisma.savedSignal.deleteMany({
+    where: { userId: session.user.id, signalId },
   })
 
   return Response.json({ saved: false })
