@@ -20,6 +20,7 @@ export default function SettingsPage() {
   const [status, setStatus] = useState<{ type: "success" | "error"; message: string } | null>(null)
   const [retentionDays, setRetentionDays] = useState(7)
   const [scheduleInterval, setScheduleInterval] = useState(60)
+  const [configLoaded, setConfigLoaded] = useState(false)
 
   useEffect(() => {
     if (aiData?.items?.[0]) {
@@ -38,6 +39,7 @@ export default function SettingsPage() {
       .then(r => r.ok ? r.json() : { retentionDays: 7, scheduleInterval: 60 })
       .then(d => { setRetentionDays(d.retentionDays ?? 7); setScheduleInterval(d.scheduleInterval ?? 60) })
       .catch(() => { setRetentionDays(7); setScheduleInterval(60) })
+      .finally(() => setConfigLoaded(true))
   }, [])
 
   useEffect(() => {
@@ -179,6 +181,7 @@ export default function SettingsPage() {
           <div>
             <label className="text-xs text-muted block mb-1">AI 摘要保留天数</label>
             <select value={retentionDays}
+              disabled={!configLoaded}
               onChange={async (e) => {
                 const v = Number(e.target.value)
                 setRetentionDays(v)
@@ -189,7 +192,7 @@ export default function SettingsPage() {
                 })
                 setStatus({ type: "success", message: `保留天数已更新为 ${v} 天` })
               }}
-              className="text-sm bg-transparent border border-border rounded-lg px-3 py-2 text-foreground">
+              className="text-sm bg-transparent border border-border rounded-lg px-3 py-2 text-foreground disabled:opacity-50">
               <option value={7}>7 天</option>
               <option value={14}>14 天</option>
               <option value={30}>30 天</option>
@@ -201,6 +204,7 @@ export default function SettingsPage() {
           <div className="mt-4">
             <label className="text-xs text-muted block mb-1">抓取间隔</label>
             <select value={scheduleInterval}
+              disabled={!configLoaded}
               onChange={async (e) => {
                 const v = Number(e.target.value)
                 setScheduleInterval(v)
