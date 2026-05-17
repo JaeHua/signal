@@ -45,43 +45,43 @@ export async function generateEmbedding(text: string): Promise<number[]> {
 
 export async function searchByEmbedding(
   query: string,
-  summaries: Array<{
+  items: Array<{
     id: string
     signalId: string
+    title: string
     aiSummary: string
     techTags: string
     embedding: string | null
   }>
 ) {
-  if (summaries.length === 0) return []
+  if (items.length === 0) return []
 
-  const hasEmbeddings = summaries.some((s) => s.embedding)
   const queryEmb = await generateEmbedding(query)
 
-  if (hasEmbeddings) {
-    const results = summaries
+  if (items.some((s) => s.embedding) && queryEmb.length > 100) {
+    return items
       .filter((s) => s.embedding)
       .map((s) => {
         const emb = JSON.parse(s.embedding!)
-        const smallEmb = emb.slice(0, queryEmb.length)
-        const score = cosineSimilarity(queryEmb, smallEmb)
+        const score = cosineSimilarity(queryEmb, emb.slice(0, queryEmb.length))
         return { ...s, score }
       })
       .filter((s) => s.score > 0.1)
       .sort((a, b) => b.score - a.score)
-    return results
   }
 
-  const results = summaries.map((s) => {
-    const combined = `${s.aiSummary} ${s.techTags}`.toLowerCase()
-    const q = query.toLowerCase()
-    let score = 0
-    if (combined.includes(q)) score = 0.8
-    for (const word of q.split(/\s+/)) {
-      if (combined.includes(word)) score += 0.1
-    }
-    return { ...s, score: Math.min(score, 1) }
-  })
-
-  return results.filter((s) => s.score > 0.1).sort((a, b) => b.score - a.score)
+  const q = query.toLowerCase()
+  return items
+    .map((s) => {
+      const haystack = `${s.title} ${s.aiSummary} ${s.techTags}`.toLowerCase()
+      let score = 0
+      if (haystack.includes(q)) score = 0.9
+      const words = q.split(/[\s\/\-_]+/).filter(Boolean)
+      for (const word of words) {
+        if (haystack.includes(word)) score += 0.15
+      }
+      return { ...s, score: Math.min(score, 1) }
+    })
+    .filter((s) => s.score > 0.1)
+    .sort((a, b) => b.score - a.score)
 }
